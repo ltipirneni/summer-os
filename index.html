@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Likith — Summer 2026 OS</title>
+<style>
+  :root {
+    --bg: #FAFAF7; --surface: #FFFFFF;
+    --text-primary: #2C2C2A; --text-secondary: #5F5E5A; --text-tertiary: #888780;
+    --border: rgba(0,0,0,0.08); --border-strong: rgba(0,0,0,0.16);
+    --blue: #185FA5; --blue-bg: #E6F1FB;
+    --orange: #854F0B; --orange-bg: #FAEEDA;
+    --red: #A32D2D; --red-bg: #FCEBEB;
+    --green: #2a7a3b; --green-bg: #EAF5EC;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a1a; --surface: #242422;
+      --text-primary: #F1EFE8; --text-secondary: #B4B2A9; --text-tertiary: #888780;
+      --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.16);
+      --blue-bg: #0d2d4a; --orange-bg: #3d2205;
+      --red-bg: #3a1010; --green-bg: #1a3325;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text-primary); font-size:15px; line-height:1.55; }
+
+  .header { position:sticky; top:0; background:var(--bg); border-bottom:0.5px solid var(--border); padding:1rem 1.5rem; z-index:100; }
+  .header-inner { max-width:880px; margin:0 auto; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  h1 { font-size:18px; font-weight:500; margin:0; flex:1; min-width:0; }
+  .filters { display:flex; gap:6px; flex-wrap:wrap; }
+  .filter-btn { background:transparent; border:0.5px solid var(--border-strong); border-radius:8px; padding:4px 10px; font-size:12px; color:var(--text-primary); cursor:pointer; font-family:inherit; }
+  .filter-btn.active { background:var(--text-primary); color:var(--bg); border-color:var(--text-primary); }
+  .search { width:100%; max-width:240px; padding:6px 10px; border:0.5px solid var(--border-strong); border-radius:8px; background:var(--surface); color:var(--text-primary); font-family:inherit; font-size:13px; }
+
+  .container { max-width:880px; margin:0 auto; padding:1.5rem; }
+  .meta { font-size:13px; color:var(--text-secondary); margin-bottom:1rem; }
+
+  .token-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 14px; margin-bottom:1rem; background:var(--surface); border:0.5px solid var(--border-strong); border-radius:10px; font-size:12px; color:var(--text-secondary); }
+  .token-bar input { flex:1; min-width:200px; padding:5px 8px; border:0.5px solid var(--border-strong); border-radius:6px; font-size:12px; font-family:inherit; background:var(--bg); color:var(--text-primary); }
+  .token-status { font-size:11px; min-width:160px; text-align:right; }
+  .token-status.ok      { color:var(--green); }
+  .token-status.err     { color:var(--red); }
+  .token-status.loading { color:var(--orange); }
+  .reload-btn { padding:4px 10px; font-size:11px; font-family:inherit; cursor:pointer; border:0.5px solid var(--border-strong); border-radius:6px; background:transparent; color:var(--text-secondary); }
+  .reload-btn:hover { background:var(--surface); }
+
+  .goals-panel { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:1.5rem; }
+  @media (max-width:640px) { .goals-panel { grid-template-columns:1fr; } }
+  .goal-card { background:var(--surface); border:0.5px solid var(--border-strong); border-radius:12px; padding:12px 14px; }
+  .goal-area  { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:3px; }
+  .goal-title { font-size:13px; font-weight:500; margin-bottom:6px; line-height:1.3; }
+  .goal-badge { display:inline-block; font-size:10px; font-weight:500; padding:2px 7px; border-radius:999px; margin-bottom:6px; }
+  .badge-ip  { background:var(--blue-bg);   color:var(--blue); }
+  .badge-on  { background:var(--green-bg);  color:var(--green); }
+  .badge-at  { background:var(--orange-bg); color:var(--orange); }
+  .badge-off { background:var(--red-bg);    color:var(--red); }
+  .goal-subs { list-style:none; padding:0; margin:0 0 6px; }
+  .goal-subs li { font-size:11.5px; color:var(--text-secondary); padding:1px 0; display:flex; align-items:center; gap:5px; }
+  .goal-subs li::before { content:''; width:4px; height:4px; border-radius:50%; background:var(--border-strong); flex-shrink:0; }
+  .notion-link { font-size:11px; color:var(--text-tertiary); text-decoration:none; }
+  .notion-link:hover { color:var(--text-secondary); }
+
+  .toc-jump { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:1rem; }
+  .toc-jump a { font-size:12px; padding:4px 10px; border:0.5px solid var(--border-strong); border-radius:999px; text-decoration:none; color:var(--text-primary); }
+  .toc-jump a:hover { background:var(--surface); }
+  .anchor { display:block; height:0; margin-top:-64px; padding-top:64px; }
+
+  .phase-banner { margin:2rem 0 1rem; padding:12px 16px; background:var(--surface); border:0.5px solid var(--border-strong); border-radius:12px; }
+  .phase-banner h2 { font-size:14px; font-weight:500; margin:0 0 2px; }
+  .phase-banner p  { font-size:13px; color:var(--text-secondary); margin:0; }
+
+  .day { display:grid; grid-template-columns:80px 1fr; gap:16px; padding:14px 0; border-top:0.5px solid var(--border); }
+  .day.weekend { opacity:0.55; }
+  .day.today .day-label { color:var(--blue); }
+  .day.today { background:rgba(24,95,165,0.04); border-radius:8px; padding-left:8px; padding-right:8px; }
+  .day-meta { padding-top:2px; }
+  .day-label   { font-size:14px; font-weight:500; }
+  .day-weekday { font-size:12px; color:var(--text-secondary); }
+  .items { display:flex; flex-direction:column; gap:6px; }
+
+  .item { display:flex; align-items:flex-start; gap:10px; padding:6px 10px; border-radius:8px; font-size:13.5px; transition:opacity 0.15s; }
+  .item.done { opacity:0.38; }
+  .item.done .item-title { text-decoration:line-through; }
+
+  .item-check { flex-shrink:0; width:16px; height:16px; border:1.5px solid var(--border-strong); border-radius:4px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.12s,border-color 0.12s; margin-top:2px; }
+  .item-check:hover { border-color:var(--text-secondary); }
+  .item.done .item-check { background:var(--text-primary); border-color:var(--text-primary); }
+  .item.done .item-check::after { content:''; display:block; width:9px; height:5px; border-left:2px solid var(--bg); border-bottom:2px solid var(--bg); transform:rotate(-45deg) translate(1px,-1px); }
+
+  .pill { flex-shrink:0; font-size:10px; font-weight:500; padding:2px 7px; border-radius:999px; text-transform:uppercase; letter-spacing:0.3px; margin-top:1px; }
+  .pill-MIG       { background:var(--blue-bg);   color:var(--blue); }
+  .pill-Rx        { background:var(--orange-bg); color:var(--orange); }
+  .pill-Milestone { background:var(--red-bg);    color:var(--red); }
+  .pill-Body      { background:var(--green-bg);  color:var(--green); }
+  .pill-Book      { background:#F3F0FF;           color:#5B2D9E; }
+  .pill-Daily     { background:#F1EFE8;           color:var(--text-secondary); }
+
+  .item-body  { flex:1; min-width:0; }
+  .item-title { font-weight:400; }
+  .item-note  { font-size:12px; color:var(--text-secondary); margin-top:2px; }
+
+  .loading-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:50vh; gap:16px; color:var(--text-secondary); }
+  .spinner { width:28px; height:28px; border:2.5px solid var(--border-strong); border-top-color:var(--text-primary); border-radius:50%; animation:spin 0.7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .loading-label { font-size:13px; }
+
+  .prompt-screen { max-width:420px; margin:80px auto; text-align:center; padding:32px; background:var(--surface); border:0.5px solid var(--border-strong); border-radius:16px; }
+  .prompt-screen h2 { font-size:16px; font-weight:500; margin:0 0 8px; }
+  .prompt-screen p  { font-size:13px; color:var(--text-secondary); margin:0; }
+
+  @media (max-width:600px) { .day { grid-template-columns:60px 1fr; gap:10px; } .header { padding:0.75rem 1rem; } h1 { font-size:15px; } .container { padding:1rem; } }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <h1>Summer 2026 — OS</h1>
+    <input class="search" id="search" placeholder="Search…" />
+    <div class="filters" id="filters">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="MIG">MIG</button>
+      <button class="filter-btn" data-filter="Rx">Rx</button>
+      <button class="filter-btn" data-filter="Body">Body</button>
+      <button class="filter-btn" data-filter="Milestone">Milestones</button>
+      <button class="filter-btn" data-filter="Daily">Habits</button>
+    </div>
+  </div>
+</header>
+
+<main class="container" id="main">
+  <p class="meta">May 4 → Aug 31, 2026 · Rx + MIG + Body + Habits · live from Notion</p>
+
+  <div class="token-bar">
+    <span>🔗 Notion</span>
+    <input id="token-input" type="password" placeholder="Paste Notion integration token (secret_…)" />
+    <button class="reload-btn" id="reload-btn">↺ Reload</button>
+    <span class="token-status" id="token-status">No token set</span>
+  </div>
+
+  <div class="goals-panel">
+    <div class="goal-card">
+      <div class="goal-area">Goal 1 · Recruiting</div>
+      <div class="goal-title">IB interview-ready (M&amp;A + Rx)</div>
+      <span class="goal-badge badge-ip">In progress</span>
+      <ul class="goal-subs">
+        <li>1A — MIG track</li><li>1B — Rx technical mastery</li>
+        <li>1C — Rx case fluency</li><li>1D — Rx narrative</li><li>1E — Rx networking</li>
+      </ul>
+      <a class="notion-link" href="https://www.notion.so/353c42fb5a578157959fe278585550ab" target="_blank">↗ Notion</a>
+    </div>
+    <div class="goal-card">
+      <div class="goal-area">Goal 2 · Intellectual</div>
+      <div class="goal-title">Intellectual development</div>
+      <span class="goal-badge badge-ip">In progress</span>
+      <ul class="goal-subs">
+        <li>2A — Reading (8–9 books)</li><li>2C — Applied output</li><li>2D — AI fluency projects</li>
+      </ul>
+      <a class="notion-link" href="https://www.notion.so/353c42fb5a57811b93eddd7a07464549" target="_blank">↗ Notion</a>
+    </div>
+    <div class="goal-card">
+      <div class="goal-area">Goal 3 · Wellness</div>
+      <div class="goal-title">Physical wellness + journaling</div>
+      <span class="goal-badge badge-ip">In progress</span>
+      <ul class="goal-subs">
+        <li>3A — Mono recovery ✓ May 15</li><li>3B — Training restart</li>
+        <li>3C — Cooking habit</li><li>3D — Nutrition tracking</li>
+      </ul>
+      <a class="notion-link" href="https://www.notion.so/353c42fb5a5781c1b0acd7eb28790172" target="_blank">↗ Notion</a>
+    </div>
+  </div>
+
+  <div class="toc-jump">
+    <a href="#m-2026-05">May</a><a href="#m-2026-06">June</a>
+    <a href="#m-2026-07">July</a><a href="#m-2026-08">August</a>
+  </div>
+
+  <div id="schedule-root">
+    <div class="prompt-screen" id="prompt-msg">
+      <h2>Paste your Notion token above</h2>
+      <p>The schedule loads live from Notion every time you open this file. Paste your <code>secret_…</code> token in the bar above, then hit ↺ Reload.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+const API = 'https://api.anthropic.com/v1/messages';
+const TOKEN_KEY = 's26_notion_token';
+const DONE_KEY  = 'likith_s26_done';
+const CACHE_KEY = 's26_schedule_cache';
+const CACHE_TTL = 5 * 60 * 1000;
+
+let notionToken  = localStorage.getItem(TOKEN_KEY) || '';
+let doneSet      = loadDone();
+let activeFilter = 'all';
+let activeQuery  = '';
+
+// ── Persistence ──────────────────────────────────────────────────────────────
+function loadDone() {
+  try { return new Set(JSON.parse(localStorage.getItem(DONE_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+function saveDone() { localStorage.setItem(DONE_KEY, JSON.stringify([...doneSet])); }
+
+// ── Token UI ─────────────────────────────────────────────────────────────────
+const tokenInput  = document.getElementById('token-input');
+const tokenStatus = document.getElementById('token-status');
+const reloadBtn   = document.getElementById('reload-btn');
+
+tokenInput.value = notionToken;
+setStatus(notionToken ? 'Token saved' : 'No token — paste above', notionToken ? 'ok' : '');
+
+function setStatus(msg, cls) {
+  tokenStatus.textContent = msg;
+  tokenStatus.className = 'token-status ' + (cls || '');
+}
+
+tokenInput.addEventListener('change', () => {
+  notionToken = tokenInput.value.trim();
+  localStorage.setItem(TOKEN_KEY, notionToken);
+  if (notionToken) { setStatus('Loading…', 'loading'); loadSchedule(); }
+  else setStatus('No token set', '');
+});
+
+reloadBtn.addEventListener('click', () => {
+  localStorage.removeItem(CACHE_KEY);
+  if (notionToken) { setStatus('Reloading…', 'loading'); loadSchedule(); }
+  else setStatus('No token set', '');
+});
+
+// ── Fetch from Notion ─────────────────────────────────────────────────────────
+async function loadSchedule() {
+  // Try cache first
+  try {
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if (c && Date.now() - c.ts < CACHE_TTL) {
+      render(c.items);
+      setStatus(`✓ ${c.items.length} items (cached)`, 'ok');
+      return;
+    }
+  } catch {}
+
+  showSpinner('Fetching schedule from Notion…');
+
+  try {
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8000,
+        system: `You are a data fetcher. Fetch ALL pages from the Notion database at data source URL "collection://8be4a417-8840-4565-8600-7b7c6f2e745a". 
+
+For every page, return a JSON object with these exact keys:
+- id: the page id string
+- title: the Item property value
+- track: the Track property value (MIG, Rx, Milestone, Book, or Phase shift)
+- start: the date:Date:start value as YYYY-MM-DD string
+- end: the date:Date:end value as YYYY-MM-DD string, or null if none
+- notes: the Notes property value as a string (empty string if none)
+- done: boolean, true if Done property is checked
+
+Return ONLY a raw JSON array. No markdown fences, no explanation, no extra text. Start with [ end with ].`,
+        messages: [{ role: 'user', content: 'Fetch all schedule items now.' }],
+        mcp_servers: [{ type: 'url', url: 'https://mcp.notion.com/mcp', name: 'notion-mcp', authorization_token: notionToken }]
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const raw = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    const match = raw.match(/\[[\s\S]*\]/);
+    if (!match) throw new Error('Could not parse schedule data from response');
+
+    const items = JSON.parse(match[0]);
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), items }));
+    render(items);
+    setStatus(`✓ ${items.length} items loaded`, 'ok');
+
+  } catch(e) {
+    showError(e.message);
+    setStatus('Load failed', 'err');
+  }
+}
+
+// ── Workout items (client-side) ───────────────────────────────────────────────
+const DELOAD = { 1:{l:'Upper A (deload)',n:'DB incline press, row, OHP — 3×12 RIR 3-4. Form focus.'}, 2:{l:'Lower A (deload)',n:'Goblet squat, DB RDL, lunge — 3×12 RIR 3-4.'}, 4:{l:'Upper B (deload)',n:'DB row, lat pulldown, curl, tricep — 3×12 RIR 3-4.'}, 5:{l:'Lower B (deload)',n:'DB RDL, hip thrust, step-up, calf — 3×12 RIR 3-4.'} };
+const FULL   = { 1:{l:'Upper A',n:'Incline DB press 4×8-12, DB row 4×10, OHP 3×10, cable fly 3×12, face pull 3×15.'}, 2:{l:'Lower A',n:'Goblet squat 4×10-12, DB RDL 4×10, leg press 3×12, lunge 3×10, calf 4×15.'}, 4:{l:'Upper B',n:'DB row 4×10, lat pulldown 4×10, tricep 3×12, curl 3×12, rear delt 3×15.'}, 5:{l:'Lower B',n:'DB RDL 4×10-12, hip thrust 4×12, leg curl 3×12, step-up 3×10, calf 4×15.'} };
+
+function gymItems() {
+  const out = [];
+  let d = new Date('2026-05-15');
+  const end = new Date('2026-08-31');
+  const deloadEnd = new Date('2026-05-28');
+  while (d <= end) {
+    const dow = d.getDay();
+    const sp = d <= deloadEnd ? DELOAD : FULL;
+    if (sp[dow]) {
+      const ds = d.toISOString().slice(0,10);
+      out.push({ id:'gym-'+ds, title:'Gym — '+sp[dow].l, track:'Body', start:ds, end:null, notes:sp[dow].n, done:false });
+    }
+    d.setDate(d.getDate()+1);
+  }
+  return out;
+}
+
+// ── Daily habits (client-side) ────────────────────────────────────────────────
+const HABITS = [
+  'Petition + Pari Passu skim (20 min)',
+  '1 podcast on commute (Credit Edge / Odd Lots / Money Stuff)',
+  'Update jargon log with new terms',
+];
+
+function dailyItems() {
+  const out = [];
+  let d = new Date('2026-05-04');
+  const end = new Date('2026-08-31');
+  while (d <= end) {
+    const ds = d.toISOString().slice(0,10);
+    if (d.getDay() === 0) out.push({ id:'rev-'+ds, title:'Sunday 30-min review (week + next week priorities)', track:'Daily', start:ds, end:null, notes:'', done:false });
+    HABITS.forEach((h,i) => out.push({ id:`h${i}-${ds}`, title:h, track:'Daily', start:ds, end:null, notes:'', done:false }));
+    d.setDate(d.getDate()+1);
+  }
+  return out;
+}
+
+// ── Phase config ──────────────────────────────────────────────────────────────
+const PHASES = [
+  { s:'2026-05-04', e:'2026-05-22', label:'Phase 1: Framing', desc:'Decide if you like the work. Houlihan ✓ · Overview ✓ · Serta next.' },
+  { s:'2026-05-23', e:'2026-06-07', label:'Phase 2: Foundation', desc:"Pragmatist's, BIWS Accounting + EV/EQV. Pair with MIG." },
+  { s:'2026-06-08', e:'2026-06-30', label:'Phase 3: Credit core', desc:'CIH cover-to-cover. The goldmine.' },
+  { s:'2026-07-01', e:'2026-07-19', label:'Phase 4: Distressed', desc:'Moyer middle chapters + Cap Tables + code.' },
+  { s:'2026-07-20', e:'2026-07-31', label:'Phase 5: Interview prep', desc:'Q&A drill, Bond Math, case studies.' },
+  { s:'2026-08-01', e:'2026-08-31', label:'Phase 6: Live recruiting', desc:'Outreach live. Final review weeks.' },
+];
+const MONTHS = ['2026-05','2026-06','2026-07','2026-08'];
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render(notionItems) {
+  // Expand range items onto every date
+  const byDate = {};
+  const add = (ds, item) => { (byDate[ds] = byDate[ds]||[]).push(item); };
+
+  [...notionItems, ...gymItems(), ...dailyItems()].forEach(item => {
+    if (!item.start) return;
+    if (!item.end || item.end === item.start) { add(item.start, item); return; }
+    let d = new Date(item.start), eD = new Date(item.end);
+    while (d <= eD) { add(d.toISOString().slice(0,10), {...item}); d.setDate(d.getDate()+1); }
+  });
+
+  const todayStr = new Date().toISOString().slice(0,10);
+  let html = '', lastPhase = -1, lastMonth = '';
+
+  let d = new Date('2026-05-04');
+  const end = new Date('2026-08-31');
+  while (d <= end) {
+    const ds = d.toISOString().slice(0,10);
+    const dow = d.getDay();
+    const mo  = ds.slice(0,7);
+
+    if (mo !== lastMonth) { lastMonth = mo; if (MONTHS.includes(mo)) html += `<span class="anchor" id="m-${mo}"></span>`; }
+
+    const pi = PHASES.findIndex(p => ds >= p.s && ds <= p.e);
+    if (pi !== -1 && pi !== lastPhase) { lastPhase = pi; const p = PHASES[pi]; html += `<div class="phase-banner"><h2>${p.label}</h2><p>${p.desc}</p></div>`; }
+
+    const items = byDate[ds] || [];
+    const isWE  = dow === 0 || dow === 6;
+    const isToday = ds === todayStr;
+    const cls = ['day', isWE?'weekend':'', isToday?'today':'', items.length===0?'empty':''].filter(Boolean).join(' ');
+    const dlabel = d.toLocaleDateString('en-US',{month:'short',day:'2-digit'}).replace(',','');
+    const dweek  = d.toLocaleDateString('en-US',{weekday:'long'});
+
+    html += `<div class="${cls}" data-date="${ds}"><div class="day-meta"><div class="day-label">${dlabel}</div><div class="day-weekday">${dweek}</div></div><div class="items">`;
+
+    if (!items.length) {
+      html += `<div style="font-size:13px;color:var(--text-tertiary);font-style:italic">(no scheduled items)</div>`;
+    } else {
+      items.forEach(item => {
+        const track   = item.track || 'Daily';
+        const key     = ds + '|' + item.title;
+        const isDone  = doneSet.has(key) || item.done;
+        const pillLbl = track === 'Phase shift' ? 'Phase' : track;
+        html += `<div class="item cat-${track}${isDone?' done':''}" data-cat="${track}" data-key="${esc(key)}" data-date="${ds}" data-title="${esc(item.title)}" data-id="${esc(item.id||'')}">`;
+        html += `<div class="item-check"></div><span class="pill pill-${track}">${pillLbl}</span>`;
+        html += `<div class="item-body"><div class="item-title">${esc(item.title)}</div>`;
+        if (item.notes) html += `<div class="item-note">${esc(item.notes)}</div>`;
+        html += `</div></div>`;
+      });
+    }
+    html += `</div></div>`;
+    d.setDate(d.getDate()+1);
+  }
+
+  const root = document.getElementById('schedule-root');
+  root.innerHTML = html;
+
+  // Checkboxes
+  root.querySelectorAll('.item-check').forEach(chk => {
+    chk.addEventListener('click', e => {
+      e.stopPropagation();
+      const it = chk.closest('.item');
+      const key = it.dataset.key;
+      const isDone = it.classList.toggle('done');
+      isDone ? doneSet.add(key) : doneSet.delete(key);
+      saveDone();
+      syncDone(it.dataset.title, it.dataset.date, it.dataset.id, isDone);
+    });
+  });
+
+  // Scroll to today
+  const te = root.querySelector(`.day[data-date="${todayStr}"]`);
+  if (te) setTimeout(() => te.scrollIntoView({behavior:'smooth',block:'center'}), 150);
+
+  applyFilter();
+}
+
+// ── Sync done state → Notion ──────────────────────────────────────────────────
+async function syncDone(title, dateStr, pageId, isDone) {
+  if (!notionToken || !pageId || pageId.startsWith('gym-') || pageId.startsWith('h') || pageId.startsWith('rev-')) return;
+  setStatus('Syncing…', 'loading');
+  try {
+    await fetch(API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:100,
+        system:'Update the Done checkbox on a Notion schedule page. Use notion-update-page with command update_properties. Set Done to __YES__ or __NO__. Say only "ok".',
+        messages:[{role:'user',content:`Page id: ${pageId}. Set Done=${isDone} ("${title}")`}],
+        mcp_servers:[{type:'url',url:'https://mcp.notion.com/mcp',name:'notion-mcp',authorization_token:notionToken}]
+      })
+    });
+    setStatus('✓ Synced', 'ok');
+    setTimeout(() => setStatus('Connected', 'ok'), 2000);
+  } catch {
+    setStatus('Sync error', 'err');
+    setTimeout(() => setStatus('Connected', 'ok'), 3000);
+  }
+}
+
+// ── Filter + search ───────────────────────────────────────────────────────────
+function applyFilter() {
+  document.querySelectorAll('.item').forEach(it => {
+    const catOk = activeFilter==='all' || it.dataset.cat===activeFilter;
+    const qOk   = !activeQuery || it.textContent.toLowerCase().includes(activeQuery);
+    it.style.display = (catOk && qOk) ? '' : 'none';
+  });
+  document.querySelectorAll('.day').forEach(d => {
+    const vis = d.querySelectorAll('.item:not([style*="display: none"])').length;
+    d.style.display = (vis===0 && (activeFilter!=='all'||activeQuery)) ? 'none' : '';
+  });
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    applyFilter();
+  });
+});
+document.getElementById('search').addEventListener('input', e => {
+  activeQuery = e.target.value.toLowerCase().trim();
+  applyFilter();
+});
+
+// ── Loading/error UI ──────────────────────────────────────────────────────────
+function showSpinner(msg) {
+  document.getElementById('schedule-root').innerHTML = `<div class="loading-screen"><div class="spinner"></div><div class="loading-label">${msg}</div></div>`;
+}
+function showError(msg) {
+  document.getElementById('schedule-root').innerHTML = `<div class="prompt-screen"><h2>Could not load schedule</h2><p>${esc(msg)}</p><p style="margin-top:8px;font-size:12px;color:var(--text-tertiary)">Check your token and hit ↺ Reload.</p></div>`;
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+if (notionToken) loadSchedule();
+</script>
+</body>
+</html>
